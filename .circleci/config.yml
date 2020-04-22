@@ -1,0 +1,44 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/user-service-parent
+
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
+
+    steps:
+      - checkout
+
+      - run:
+          name: Generate cumulative pom.xml checksum
+          command: |
+            find . -type f -name "pom.xml" -exec sh -c "sha256sum {} >> ~/pom-checksum.tmp" \;
+            sort -o ~/pom-checksum ~/pom-checksum.tmp
+          when: always
+
+      - restore_cache:
+          keys:
+            - user-service-parent-{{ checksum "~/pom-checksum" }}
+            - user-service-parent-
+
+      - run: mvn de.qaware.maven:go-offline-maven-plugin:resolve-dependencies
+
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: user-service-parent-{{ checksum "~/pom-checksum" }}
+
+      - run: mvn package
+
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p ~/test-results/junit/
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/junit/ \;
+          when: always
+
+      - store_test_results:
+          path: ~/test-results
+
+      - store_artifacts:
+          path: user-service-parent/user-rest/target/user-rest-1.0-SNAPSHOT.war
