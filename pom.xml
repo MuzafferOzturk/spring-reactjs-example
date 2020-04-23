@@ -16,5 +16,12 @@
         <module>user-service-parent</module>
     </modules>
 
+    <repositories>
+        <repository>
+            <url>https://repo1.maven.org/maven2/</url>
+            <id>central</id>
+        </repository>
+    </repositories>
+
 
 </project>
